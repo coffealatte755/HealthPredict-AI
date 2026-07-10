@@ -1,126 +1,404 @@
 # HealthPredict-AI
-Dibuat untuk latihan lksn 2026
-Struktur folder
+# 🩺 HealthPredict-AI
 
+HealthPredict-AI merupakan project latihan untuk **LKSN Cloud Computing 2026** yang mensimulasikan implementasi machine learning end-to-end menggunakan layanan AWS.
+
+---
+
+# 📂 Project Structure
+
+```text
 healthpredict/
 ├── data/
-│   └── diabetes.csv              # Section 6 — upload ke S3 raw/
+│   └── diabetes.csv              # Dataset (Section 6)
+│
 ├── glue/
-│   └── healthpredict_etl.py      # Section 6.3 — Glue ETL Job
+│   └── healthpredict_etl.py      # Glue ETL Job
+│
 ├── sagemaker/
-│   ├── processing_script.py      # Section 10.2 Step 1
-│   ├── sagemaker_pipeline.py     # Section 10 — registrasi 3-step pipeline
-│   └── deploy_endpoint.py        # Section 11.3 — deploy real-time endpoint
+│   ├── processing_script.py      # SageMaker Processing
+│   ├── sagemaker_pipeline.py     # Pipeline Registration
+│   └── deploy_endpoint.py        # Endpoint Deployment
+│
 ├── sql/
-│   └── redshift_schema.sql       # Section 8.1 — 4 tabel, 3 view, 1 SP
+│   └── redshift_schema.sql       # Redshift Schema
+│
 ├── lambda/
-│   ├── predict.py                # Section 14.3
-│   ├── history.py                # Section 14.4
-│   └── health.py                 # Section 14.5
+│   ├── predict.py                # Prediction API
+│   ├── history.py                # Prediction History API
+│   └── health.py                 # Health Check API
+│
 └── frontend/
     ├── index.html
     ├── results.html
     ├── history.html
-    └── config.js                 # Section 15 — Amplify frontend
+    └── config.js
+```
 
-Cara pakai — ikuti urutan 18 task di Section 1.2
+---
 
-1–5. Networking, Storage, Secrets, DynamoDB/SNS/API Gateway skeleton
-Semua resource ini dibuat manual lewat AWS Console mengikuti tabel
-spesifikasi di Section 3, 4, 5, 9 — tidak butuh source code, cukup
-ikuti nilai parameter di modul (nama harus prefix healthpredict-).
+# 🚀 Deployment Flow
 
+Ikuti seluruh task pada **Section 1.2** sesuai urutan.
 
-Upload dataset & jalankan Crawler
-Upload data/diabetes.csv ke s3://healthpredict-dataset-[namamu]-2026/raw/diabetes.csv,
-lalu jalankan crawler healthpredict-crawler-raw.
-Glue ETL Job
+## ✅ Task 1–5
 
-Ganti [studentname] di nama bucket sesuai punyamu.
-Upload glue/healthpredict_etl.py ke s3://healthpredict-glue-[namamu]-2026/scripts/.
-Buat Job dengan parameter di Section 6.4–6.5, lalu Run.
-Catat nilai mean/std yang di-print di CloudWatch Logs job ini —
-nilai itu perlu kamu masukkan ke FEATURE_STATS di lambda/predict.py
-supaya normalisasi di Lambda konsisten dengan yang dipakai saat training.
+### Infrastructure
 
+Buat resource berikut melalui AWS Console.
 
+- VPC
+- Subnet
+- Route Table
+- Internet Gateway
+- NAT Gateway
+- Security Group
 
-Redshift schema
-Jalankan seluruh isi sql/redshift_schema.sql di Query Editor v2.
-Athena — jalankan query di Section 7.3 (sudah ada di naskah soal).
+### Storage
 
+- S3 Bucket
+- Secrets Manager
 
-10–11. SageMaker Pipeline
+### Backend Service
 
+- DynamoDB
+- SNS
+- API Gateway Skeleton
 
-Edit STUDENT_NAME di sagemaker/sagemaker_pipeline.py.
-Upload sagemaker_pipeline.py + processing_script.py ke Studio, lalu
-jalankan python sagemaker_pipeline.py dari terminal Studio (ini hanya
-mendaftarkan pipeline, belum start execution).
-Start execution dari Studio UI (Pipelines panel) dan tunggu sampai
-3 step berstatus Succeeded.
+> Semua resource menggunakan prefix:
 
+```text
+healthpredict-
+```
 
+---
 
-Model Registry & Endpoint
+# 📊 Dataset & Glue ETL
 
+## Upload Dataset
 
+```text
+data/diabetes.csv
+```
 
-Approve model version terbaru di Model Registry console.
-Jalankan python sagemaker/deploy_endpoint.py dari Studio terminal.
+Upload ke
 
+```text
+s3://healthpredict-dataset-[student]-2026/raw/diabetes.csv
+```
 
+Kemudian jalankan
 
-Batch Transform
-Jalankan lewat SageMaker Console/boto3 sesuai parameter di Section 12.2
-(model source = versi Approved terbaru).
-EventBridge
-Buat rule sesuai Section 13.2 — cukup lewat Console, target-nya pipeline ARN.
-Lambda & API Gateway
+```
+healthpredict-crawler-raw
+```
 
+---
 
+## Glue ETL
 
-Deploy lambda/predict.py, lambda/history.py, lambda/health.py
-sebagai 3 fungsi terpisah sesuai runtime/memory/timeout di Section 14.1.
-predict.py dan history.py butuh layer psycopg2 untuk koneksi
-Redshift (bisa pakai public Lambda layer psycopg2, atau build sendiri
-karena AWS Academy tidak selalu punya akses ke semua layer publik).
-Set semua environment variable sesuai Section 14.2.
-Buat API Gateway dengan 4 route sesuai tabel Section 14.5, aktifkan API Key
-dan Usage Plan untuk 3 route yang perlu auth.
+Upload script
 
+```text
+glue/healthpredict_etl.py
+```
 
+ke
 
-Amplify frontend
+```text
+s3://healthpredict-glue-[student]-2026/scripts/
+```
 
+Lalu
 
+- Create Glue Job
+- Configure parameter sesuai Section 6
+- Run Job
 
-Edit frontend/config.js — isi INVOKE_URL dan API_KEY dari API Gateway
-yang sudah kamu deploy.
-Zip 4 file di folder frontend/ (index.html, results.html, history.html,
-config.js) jadi healthpredict-frontend.zip — file harus di root ZIP,
-bukan di dalam subfolder.
-Upload lewat Amplify Console → "Deploy without Git provider".
+### Penting
 
+Catat hasil berikut pada CloudWatch Logs
 
+```python
+mean
+std
+```
 
-Verifikasi end-to-end
-Ikuti urutan di Section 16.1 (Secrets → Glue+Athena → Pipeline+Registry →
-Batch Transform → API dual-write → EventBridge).
+Nilai tersebut harus dimasukkan ke
 
+```python
+FEATURE_STATS
+```
 
-Catatan penting untuk latihan LKS
+di file
 
+```text
+lambda/predict.py
+```
 
-Waktu: modul asli 3-4 jam. Latih diri kerjakan networking (VPC dkk) di
-bawah 30-40 menit karena itu paling banyak field yang harus diisi manual.
-LabRole: AWS Academy Learner Lab tidak bisa membuat IAM Role baru —
-semua resource harus pakai LabRole yang sudah ada, jangan coba buat role baru.
-Hapus endpoint SageMaker setelah testing — biaya jalan terus selama
-endpoint InService, ini sering jadi poin yang kelupaan pas lomba.
-psycopg2 Lambda layer sering jadi blocker di AWS Academy karena
-keterbatasan region/service. Siapkan solusi ini duluan saat latihan supaya
-tidak kehabisan waktu pas hari-H.
-File-file ini adalah starting point yang mengikuti spesifikasi modul
-persis — kamu tetap perlu mengetik/upload manual di Console sesuai urutan
-18 task, karena itulah yang dinilai di kompetisi (bukan cuma py/sql-nya jadi).
+agar normalisasi saat inference sama dengan proses training.
+
+---
+
+# 🗄 Redshift & Athena
+
+## Redshift
+
+Jalankan
+
+```text
+sql/redshift_schema.sql
+```
+
+yang berisi
+
+- 4 Tables
+- 3 Views
+- 1 Stored Procedure
+
+---
+
+## Athena
+
+Jalankan query pada
+
+**Section 7.3**
+
+---
+
+# 🤖 SageMaker Pipeline
+
+Edit terlebih dahulu
+
+```python
+STUDENT_NAME
+```
+
+di
+
+```text
+sagemaker/sagemaker_pipeline.py
+```
+
+Upload ke SageMaker Studio
+
+```
+processing_script.py
+sagemaker_pipeline.py
+```
+
+Lalu jalankan
+
+```bash
+python sagemaker_pipeline.py
+```
+
+Selanjutnya
+
+- Open Pipelines
+- Start Execution
+- Tunggu seluruh 3 step menjadi
+
+```text
+Succeeded
+```
+
+---
+
+# 📦 Model Registry & Endpoint
+
+1. Approve model terbaru pada Model Registry.
+
+2. Deploy endpoint.
+
+```bash
+python deploy_endpoint.py
+```
+
+---
+
+# 📈 Batch Transform
+
+Jalankan Batch Transform menggunakan
+
+- Model Version terbaru
+- Status Approved
+
+---
+
+# ⏰ EventBridge
+
+Buat EventBridge Rule
+
+Target
+
+```text
+SageMaker Pipeline ARN
+```
+
+---
+
+# ⚡ Lambda & API Gateway
+
+Deploy tiga Lambda berikut.
+
+```
+predict.py
+history.py
+health.py
+```
+
+Konfigurasi sesuai Section 14.
+
+## Dependency
+
+Gunakan layer
+
+```
+psycopg2
+```
+
+untuk
+
+- predict.py
+- history.py
+
+agar dapat terhubung ke Amazon Redshift.
+
+---
+
+## Environment Variables
+
+Isi seluruh Environment Variable sesuai Section 14.2.
+
+---
+
+## API Gateway
+
+Buat 4 endpoint.
+
+Aktifkan
+
+- API Key
+- Usage Plan
+
+untuk endpoint yang membutuhkan autentikasi.
+
+---
+
+# 🌐 Amplify Frontend
+
+Edit
+
+```javascript
+frontend/config.js
+```
+
+Isi
+
+```javascript
+INVOKE_URL
+API_KEY
+```
+
+Kemudian zip file berikut
+
+```
+index.html
+results.html
+history.html
+config.js
+```
+
+Menjadi
+
+```text
+healthpredict-frontend.zip
+```
+
+> Pastikan file berada di root ZIP, bukan di dalam folder.
+
+Deploy melalui
+
+```
+Amplify Console
+→ Deploy without Git Provider
+```
+
+---
+
+# ✅ End-to-End Verification
+
+Lakukan pengujian secara berurutan.
+
+- Secrets Manager
+- Glue
+- Athena
+- SageMaker Pipeline
+- Model Registry
+- Batch Transform
+- API Gateway
+- EventBridge
+
+---
+
+# ⚠️ Important Notes
+
+## Waktu Pengerjaan
+
+Target latihan
+
+```
+3–4 Jam
+```
+
+Target Networking
+
+```
+30–40 Menit
+```
+
+---
+
+## AWS Academy
+
+Gunakan
+
+```
+LabRole
+```
+
+Jangan membuat IAM Role baru karena tidak diizinkan pada AWS Academy Learner Lab.
+
+---
+
+## SageMaker Endpoint
+
+Setelah selesai testing
+
+```
+Delete Endpoint
+```
+
+karena endpoint tetap dikenakan biaya selama status **InService**.
+
+---
+
+## psycopg2
+
+Layer psycopg2 sering menjadi kendala pada AWS Academy.
+
+Disarankan menyiapkan:
+
+- Public Layer
+- Custom Layer
+
+sebelum memulai latihan.
+
+---
+
+# 🎯 Tujuan Repository
+
+Repository ini digunakan sebagai **starting point** latihan **LKSN Cloud Computing 2026**.
+
+Walaupun source code telah disediakan, seluruh resource AWS tetap harus dibuat secara manual melalui AWS Console sesuai spesifikasi modul karena proses tersebut menjadi bagian dari penilaian kompetisi.
