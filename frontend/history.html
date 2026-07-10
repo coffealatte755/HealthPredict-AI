@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>HealthPredict AI — History</title>
+<style>
+  :root {
+    --primary: #0f5b78;
+    --bg: #f4f7f8;
+    --card: #ffffff;
+    --border: #d7e0e3;
+    --text: #1c2b30;
+    --muted: #5f7379;
+    --low: #2e7d32;
+    --medium: #ef6c00;
+    --high: #c62828;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: var(--bg); color: var(--text); }
+  header { background: var(--primary); color: white; padding: 20px 24px; }
+  header h1 { margin: 0; font-size: 1.3rem; }
+  nav { margin-top: 12px; }
+  nav a { color: white; text-decoration: none; margin-right: 16px; font-size: 0.85rem; }
+  main { max-width: 860px; margin: 24px auto; padding: 0 16px; }
+  .toolbar { display: flex; gap: 10px; margin-bottom: 14px; }
+  .toolbar input { flex: 1; padding: 9px 10px; border: 1px solid var(--border); border-radius: 6px; }
+  .toolbar button { padding: 9px 16px; border: none; border-radius: 6px; background: var(--primary); color: white; cursor: pointer; }
+  table { width: 100%; border-collapse: collapse; background: var(--card); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+  th, td { padding: 10px 12px; text-align: left; font-size: 0.85rem; border-bottom: 1px solid var(--border); }
+  th { background: #eef3f4; color: var(--muted); font-weight: 600; }
+  .badge { padding: 3px 10px; border-radius: 999px; font-size: 0.75rem; color: white; font-weight: 600; }
+  .badge.LOW { background: var(--low); }
+  .badge.MEDIUM { background: var(--medium); }
+  .badge.HIGH { background: var(--high); }
+  .pager { display: flex; justify-content: space-between; margin-top: 12px; font-size: 0.85rem; color: var(--muted); }
+  .pager button { border: 1px solid var(--border); background: white; padding: 6px 12px; border-radius: 6px; cursor: pointer; }
+  #status { font-size: 0.85rem; color: var(--muted); margin-bottom: 8px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>HealthPredict AI</h1>
+  <nav>
+    <a href="index.html">New Prediction</a>
+    <a href="history.html">History</a>
+  </nav>
+</header>
+
+<main>
+  <div class="toolbar">
+    <input type="text" id="patientFilter" placeholder="Filter by Patient ID (e.g. PAT-0001)" />
+    <button id="searchBtn">Search</button>
+  </div>
+  <div id="status">Loading history...</div>
+  <table id="historyTable" style="display:none;">
+    <thead>
+      <tr>
+        <th>Timestamp (UTC)</th>
+        <th>Patient ID</th>
+        <th>Risk Score</th>
+        <th>Risk Level</th>
+        <th>Model Version</th>
+      </tr>
+    </thead>
+    <tbody id="historyBody"></tbody>
+  </table>
+  <div class="pager">
+    <span id="pageInfo"></span>
+    <div>
+      <button id="prevBtn">&laquo; Prev</button>
+      <button id="nextBtn">Next &raquo;</button>
+    </div>
+  </div>
+</main>
+
+<script src="config.js"></script>
+<script>
+const PAGE_SIZE = 10;
+let allRecords = [];
+let currentPage = 0;
+
+const statusEl = document.getElementById("status");
+const table = document.getElementById("historyTable");
+const tbody = document.getElementById("historyBody");
+const pageInfo = document.getElementById("pageInfo");
+
+function renderPage() {
+  const start = currentPage * PAGE_SIZE;
+  const pageRecords = allRecords.slice(start, start + PAGE_SIZE);
+  tbody.innerHTML = pageRecords.map(r => `
+    <tr>
+      <td>${r.prediction_timestamp || "-"}</td>
+      <td>${r.patient_id || "-"}</td>
+      <td>${r.risk_score ? (Number(r.risk_score) * 100).toFixed(1) + "%" : "-"}</td>
+      <td><span class="badge ${r.risk_level}">${r.risk_level || "-"}</span></td>
+      <td>${r.model_version || "-"}</td>
+    </tr>
+  `).join("");
+  const totalPages = Math.max(1, Math.ceil(allRecords.length / PAGE_SIZE));
+  pageInfo.textContent = `Page ${currentPage + 1} of ${totalPages} (${allRecords.length} records)`;
+  document.getElementById("prevBtn").disabled = currentPage === 0;
+  document.getElementById("nextBtn").disabled = currentPage >= totalPages - 1;
+  table.style.display = allRecords.length ? "table" : "none";
+  statusEl.style.display = allRecords.length ? "none" : "block";
+  if (!allRecords.length) statusEl.textContent = "No prediction records found.";
+}
+
+async function loadHistory(patientId) {
+  statusEl.style.display = "block";
+  statusEl.textContent = "Loading history...";
+  table.style.display = "none";
+
+  try {
+    let url, records;
+    if (patientId) {
+      url = `${API_CONFIG.INVOKE_URL}/predict/${encodeURIComponent(patientId)}`;
+      const res = await fetch(url, { headers: { "x-api-key": API_CONFIG.API_KEY } });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to load history");
+      records = data.records || [];
+    } else {
+      url = `${API_CONFIG.INVOKE_URL}/history`;
+      const res = await fetch(url, { headers: { "x-api-key": API_CONFIG.API_KEY } });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to load history");
+      records = data.records || [];
+    }
+    allRecords = records;
+    currentPage = 0;
+    renderPage();
+  } catch (err) {
+    statusEl.textContent = `Error: ${err.message}`;
+  }
+}
+
+document.getElementById("searchBtn").addEventListener("click", () => {
+  loadHistory(document.getElementById("patientFilter").value.trim());
+});
+document.getElementById("prevBtn").addEventListener("click", () => {
+  if (currentPage > 0) { currentPage--; renderPage(); }
+});
+document.getElementById("nextBtn").addEventListener("click", () => {
+  if ((currentPage + 1) * PAGE_SIZE < allRecords.length) { currentPage++; renderPage(); }
+});
+
+loadHistory();
+</script>
+</body>
+</html>

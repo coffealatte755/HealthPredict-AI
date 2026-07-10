@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>HealthPredict AI — Result</title>
+<style>
+  :root {
+    --primary: #0f5b78;
+    --bg: #f4f7f8;
+    --card: #ffffff;
+    --border: #d7e0e3;
+    --text: #1c2b30;
+    --muted: #5f7379;
+    --low: #2e7d32;
+    --medium: #ef6c00;
+    --high: #c62828;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: var(--bg); color: var(--text); }
+  header { background: var(--primary); color: white; padding: 20px 24px; }
+  header h1 { margin: 0; font-size: 1.3rem; }
+  nav { margin-top: 12px; }
+  nav a { color: white; text-decoration: none; margin-right: 16px; font-size: 0.85rem; border-bottom: 2px solid transparent; }
+  main { max-width: 560px; margin: 24px auto; padding: 0 16px; }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 28px; text-align: center; }
+  .badge {
+    display: inline-block;
+    padding: 8px 22px;
+    border-radius: 999px;
+    font-weight: 600;
+    font-size: 1rem;
+    color: white;
+    margin: 12px 0;
+  }
+  .badge.LOW { background: var(--low); }
+  .badge.MEDIUM { background: var(--medium); }
+  .badge.HIGH { background: var(--high); }
+  .score { font-size: 2.4rem; font-weight: 700; margin: 4px 0; }
+  .meta { color: var(--muted); font-size: 0.85rem; margin-top: 18px; text-align: left; }
+  .meta div { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px dashed var(--border); }
+  a.button {
+    display: inline-block;
+    margin-top: 20px;
+    background: var(--primary);
+    color: white;
+    text-decoration: none;
+    padding: 10px 18px;
+    border-radius: 6px;
+    font-size: 0.9rem;
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>HealthPredict AI</h1>
+  <nav>
+    <a href="index.html">New Prediction</a>
+    <a href="history.html">History</a>
+  </nav>
+</header>
+
+<main>
+  <div class="card" id="resultCard">
+    <p class="meta" style="text-align:center;">Loading result...</p>
+  </div>
+</main>
+
+<script>
+const raw = sessionStorage.getItem("lastPrediction");
+const card = document.getElementById("resultCard");
+
+if (!raw) {
+  card.innerHTML = `<p>No prediction found. <a href="index.html">Submit a new one</a>.</p>`;
+} else {
+  const data = JSON.parse(raw);
+  const scorePct = (data.risk_score * 100).toFixed(1);
+  card.innerHTML = `
+    <div>Diabetes Risk Score</div>
+    <div class="score">${scorePct}%</div>
+    <span class="badge ${data.risk_level}">${data.risk_level} RISK</span>
+    <div class="meta">
+      <div><span>Prediction ID</span><span>${data.prediction_id}</span></div>
+      <div><span>Patient ID</span><span>${data.patient_id}</span></div>
+      <div><span>Model Version</span><span>${data.model_version}</span></div>
+      <div><span>Timestamp (UTC)</span><span>${data.timestamp}</span></div>
+    </div>
+    <a class="button" href="index.html">Submit Another</a>
+  `;
+}
+</script>
+</body>
+</html>
