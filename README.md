@@ -1,4 +1,3 @@
-# HealthPredict-AI
 # 🩺 HealthPredict-AI
 
 HealthPredict-AI merupakan project latihan untuk **LKSN Cloud Computing 2026** yang mensimulasikan implementasi machine learning end-to-end menggunakan layanan AWS.
