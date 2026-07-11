@@ -84,6 +84,10 @@ dyf_raw = glueContext.create_dynamic_frame.from_options(
     format_options={"withHeader": True},
 )
 df = dyf_raw.toDF()
+print("========== COLUMNS ==========")
+print(df.columns)
+df.printSchema()
+df.show(5, False
 for c in df.columns:
     df = df.withColumnRenamed(c, c.strip().lower())
 
